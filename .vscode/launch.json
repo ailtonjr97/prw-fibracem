@@ -1,0 +1,115 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "totvs_language_debug",
+			"request": "launch",
+			"name": "TOTVS Language Debug",
+			"program": "${command:AskForProgramName}",
+			"cwb": "${workspaceFolder}",
+			"smartclientBin": "C:/totvs/bin/smartclient/smartclient.exe",
+			"isMultiSession": true,
+			"enableTableSync": true,
+			"extendFeatures": {
+				"charDetails": false
+			}
+		}
+	],
+	"lastPrograms": [
+		{
+			"label": "SIGAMDI"
+		},
+		{
+			"label": "SIGAFAT"
+		},
+		{
+			"label": "VldFreteCot"
+		},
+		{
+			"label": "u_VldFreteCot"
+		},
+		{
+			"label": "MTA416BX"
+		},
+		{
+			"label": "SIGAFIN"
+		},
+		{
+			"label": "SIGAPCP"
+		},
+		{
+			"args": [
+				"U_*",
+				"aType",
+				"aFile",
+				"aLine",
+				"aDate",
+				"aTime"
+			],
+			"label": "GetFuncArray"
+		},
+		{
+			"args": [],
+			"label": "GetFuncArray"
+		},
+		{
+			"args": [],
+			"label": "TestaGetFuncArray"
+		},
+		{
+			"args": [],
+			"label": "U_TestaGetFuncArray"
+		},
+		{
+			"label": "MATA416A"
+		},
+		{
+			"args": [],
+			"label": "MATA416A"
+		},
+		{
+			"label": "U_MATA416A"
+		},
+		{
+			"args": [],
+			"label": "U_MTA416BX"
+		},
+		{
+			"args": [],
+			"label": "U_UPDATECRMA980"
+		},
+		{
+			"args": [],
+			"label": "u_MyMATA415"
+		},
+		{
+			"label": "apsdu"
+		},
+		{
+			"args": [],
+			"label": "u_cria_stamp"
+		},
+		{
+			"args": [],
+			"label": "u_MYMATA040"
+		},
+		{
+			"label": "MVCCAD"
+		},
+		{
+			"label": "u_MVCCAD"
+		},
+		{
+			"args": [],
+			"label": "u_testaFunc"
+		},
+		{
+			"label": "u_FIBTRACKORDER"
+		},
+		{
+			"label": "u_GetRandomTrivia"
+		}
+	],
+	"lastProgramExecuted": "u_GetRandomTrivia",
+	"lastProgramArguments": []
+}
