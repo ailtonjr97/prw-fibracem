@@ -27,7 +27,7 @@ WSRESTFUL CONSULTA_SCJ DESCRIPTION 'Retorna proposta comercial'
     WSMETHOD GET    ALL           DESCRIPTION 'Retorna todos os registros'          WSSYNTAX '/CONSULTA_SCJ/get_all?{updated_at, limit, page}'                                         PATH 'get_all'    PRODUCES APPLICATION_JSON
     WSMETHOD GET    INTEGRADOR    DESCRIPTION 'Retorna registros para o integrador' WSSYNTAX '/CONSULTA_SCJ/integrador?{updated_at, limit, page, filial, numero, dt_emissao, cliente}' PATH 'integrador' PRODUCES APPLICATION_JSON
     WSMETHOD PUT    UPDATE_CST    DESCRIPTION 'Faz update proposta na coluna cst'   WSSYNTAX '/CONSULTA_SCJ/update_cst?{num, fts,valor, transp}'                                       PATH 'update_cst' PRODUCES APPLICATION_JSON
-    WSMETHOD GET    UNICO         DESCRIPTION 'Retorn um unico orcamento'           WSSYNTAX '/CONSULTA_SCJ/unico?{filial, numero, cliente, loja}'                                                    PATH 'unico'      PRODUCES APPLICATION_JSON
+    WSMETHOD GET    UNICO         DESCRIPTION 'Retorn um unico orcamento'           WSSYNTAX '/CONSULTA_SCJ/unico?{filial, numero, cliente, loja}'                                     PATH 'unico'      PRODUCES APPLICATION_JSON
 
 END WSRESTFUL
 
