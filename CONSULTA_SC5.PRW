@@ -20,16 +20,20 @@ WSRESTFUL CONSULTA_SC5 DESCRIPTION ''
     WSDATA campo_logado AS STRING
     WSDATA pedido       AS STRING
     WSDATA data_ent     as STRING
-    WSDATA vendedor     as STRING    
+    WSDATA vendedor     as STRING
+    WSDATA pcampo       as STRING
+    WSDATA scampo       as STRING
+    WSDATA pvalor       as STRING
+    WSDATA svalor       as STRING
  
     //Métodos
-    WSMETHOD GET ID           DESCRIPTION 'Retorna o registro pesquisado'        WSSYNTAX '/CONSULTA_SC5/get_id?{id}'                                                                         PATH 'get_id'         PRODUCES APPLICATION_JSON
-    WSMETHOD GET ALL          DESCRIPTION 'Retorna todos os registros'           WSSYNTAX '/CONSULTA_SC5/get_all?{updated_at, limit, page}'                                                   PATH 'get_all'        PRODUCES APPLICATION_JSON
-    WSMETHOD GET TRACK_ORDER  DESCRIPTION 'Retorna registros para o Track Order' WSSYNTAX '/CONSULTA_SC5/get_track?{updated_at, limit, page, pedido, data_ent, filial, vendedor}'                       PATH 'get_track'      PRODUCES APPLICATION_JSON
-    WSMETHOD PUT UPDATE       DESCRIPTION 'Atualização de registro'              WSSYNTAX '/CONSULTA_SC5/update'                                                                              PATH 'update'         PRODUCES APPLICATION_JSON
-    WSMETHOD PUT MUDA_SEPCD   DESCRIPTION 'Faz update no campo C5_XSEPCD'        WSSYNTAX '/CONSULTA_SC5/update_xsepcd?{filial, num}'                                                         PATH 'update_xsepcd'  PRODUCES APPLICATION_JSON
-    WSMETHOD PUT MUDA_XLIBCOM DESCRIPTION 'Faz update no campo C5_XLIBCOM'       WSSYNTAX '/CONSULTA_SC5/update_xlibcom?{filial, num}'                                                        PATH 'update_xlibcom' PRODUCES APPLICATION_JSON
-    WSMETHOD PUT ALTERA_CAMPO DESCRIPTION 'Faz update no campo selecionado'      WSSYNTAX '/CONSULTA_SC5/update_campo?{filial, num, campo, booleano, hora, logado, campo_hora, campo_logado}' PATH 'update_campo'   PRODUCES APPLICATION_JSON
+    WSMETHOD GET ID           DESCRIPTION 'Retorna o registro pesquisado'        WSSYNTAX '/CONSULTA_SC5/get_id?{id}'                                                                                             PATH 'get_id'         PRODUCES APPLICATION_JSON
+    WSMETHOD GET ALL          DESCRIPTION 'Retorna todos os registros'           WSSYNTAX '/CONSULTA_SC5/get_all?{updated_at, limit, page}'                                                                       PATH 'get_all'        PRODUCES APPLICATION_JSON
+    WSMETHOD GET TRACK_ORDER  DESCRIPTION 'Retorna registros para o Track Order' WSSYNTAX '/CONSULTA_SC5/get_track?{updated_at, limit, page, pedido, data_ent, filial, vendedor, pcampo, scampo, pvalor, svalor}' PATH 'get_track'      PRODUCES APPLICATION_JSON
+    WSMETHOD PUT UPDATE       DESCRIPTION 'Atualização de registro'              WSSYNTAX '/CONSULTA_SC5/update'                                                                                                  PATH 'update'         PRODUCES APPLICATION_JSON
+    WSMETHOD PUT MUDA_SEPCD   DESCRIPTION 'Faz update no campo C5_XSEPCD'        WSSYNTAX '/CONSULTA_SC5/update_xsepcd?{filial, num}'                                                                             PATH 'update_xsepcd'  PRODUCES APPLICATION_JSON
+    WSMETHOD PUT MUDA_XLIBCOM DESCRIPTION 'Faz update no campo C5_XLIBCOM'       WSSYNTAX '/CONSULTA_SC5/update_xlibcom?{filial, num}'                                                                            PATH 'update_xlibcom' PRODUCES APPLICATION_JSON
+    WSMETHOD PUT ALTERA_CAMPO DESCRIPTION 'Faz update no campo selecionado'      WSSYNTAX '/CONSULTA_SC5/update_campo?{filial, num, campo, booleano, hora, logado, campo_hora, campo_logado}'                     PATH 'update_campo'   PRODUCES APPLICATION_JSON
 
 END WSRESTFUL
 
@@ -203,7 +207,7 @@ WSMETHOD GET ALL WSRECEIVE updated_at, limit, page WSSERVICE CONSULTA_SC5
     Self:SetResponse(jResponse:toJSON())
 Return lRet
 
-WSMETHOD GET TRACK_ORDER WSRECEIVE updated_at, limit, page, pedido, data_ent, filial,vendedor WSSERVICE CONSULTA_SC5
+WSMETHOD GET TRACK_ORDER WSRECEIVE updated_at, limit, page, pedido, data_ent, filial, vendedor, pcampo, scampo, pvalor, svalor WSSERVICE CONSULTA_SC5
     Local lRet       := .T.
     Local jResponse  := JsonObject():New()
     Local cQueryTab  := ''
@@ -218,7 +222,27 @@ WSMETHOD GET TRACK_ORDER WSRECEIVE updated_at, limit, page, pedido, data_ent, fi
     Local nFilial    := ''
     Local oRegistro
     Local cAliasWS   := 'SC5'
-    Local nvendedor   := ''
+    Local nvendedor  := ''
+    Local lpcampo    := 'C5_XSEPCD'
+    Local lscampo    := 'C5_XLIBCOM'
+    Local lpvalor     := 'F'
+    Local lsvalor     := 'F'
+
+    If ! Empty(::pvalor)
+        lpvalor := ::pvalor
+    EndIf
+
+    If ! Empty(::svalor)
+        lsvalor := ::svalor
+    EndIf
+
+    If ! Empty(::pcampo)
+        lpcampo := ::pcampo
+    EndIf
+
+    If ! Empty(::scampo)
+        lscampo := ::scampo
+    EndIf
 
     If ! Empty(::updated_at)
         data := ::updated_at
@@ -251,7 +275,7 @@ WSMETHOD GET TRACK_ORDER WSRECEIVE updated_at, limit, page, pedido, data_ent, fi
         cQueryTab += " WHERE S_T_A_M_P_ >= CONVERT(date,'" + data + "',103) AND TAB.C5_NUM like '%"+nPedido+"%' AND TAB.C5_FECENT like '%"+nData_ent+"%' AND TAB.C5_FILIAL like '%"+nFilial+"%' " + CRLF
     EndIf
     If Empty(data)
-        cQueryTab += " WHERE TAB.C5_NUM like '%"+nPedido+"%' AND TAB.C5_FECENT like '%"+nData_ent+"%' AND TAB.C5_FILIAL like '%"+nFilial+"%' AND TAB.C5_VEND1 like '%"+nvendedor+"%' " + CRLF
+        cQueryTab += " WHERE TAB.C5_NUM like '%"+nPedido+"%' AND TAB.C5_FECENT like '%"+nData_ent+"%' AND TAB.C5_FILIAL like '%"+nFilial+"%' AND TAB.C5_VEND1 like '%"+nvendedor+"%' AND TAB."+lpcampo+" = '"+lpvalor+"' AND TAB."+lscampo+" = '"+lsvalor+"'" + CRLF
     EndIf
 
 
