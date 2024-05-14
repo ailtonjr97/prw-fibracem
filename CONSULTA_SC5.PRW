@@ -27,13 +27,14 @@ WSRESTFUL CONSULTA_SC5 DESCRIPTION ''
     WSDATA svalor       as STRING
  
     //Métodos
-    WSMETHOD GET ID           DESCRIPTION 'Retorna o registro pesquisado'        WSSYNTAX '/CONSULTA_SC5/get_id?{id}'                                                                                             PATH 'get_id'         PRODUCES APPLICATION_JSON
-    WSMETHOD GET ALL          DESCRIPTION 'Retorna todos os registros'           WSSYNTAX '/CONSULTA_SC5/get_all?{updated_at, limit, page}'                                                                       PATH 'get_all'        PRODUCES APPLICATION_JSON
-    WSMETHOD GET TRACK_ORDER  DESCRIPTION 'Retorna registros para o Track Order' WSSYNTAX '/CONSULTA_SC5/get_track?{updated_at, limit, page, pedido, data_ent, filial, vendedor, pcampo, scampo, pvalor, svalor}' PATH 'get_track'      PRODUCES APPLICATION_JSON
-    WSMETHOD PUT UPDATE       DESCRIPTION 'Atualização de registro'              WSSYNTAX '/CONSULTA_SC5/update'                                                                                                  PATH 'update'         PRODUCES APPLICATION_JSON
-    WSMETHOD PUT MUDA_SEPCD   DESCRIPTION 'Faz update no campo C5_XSEPCD'        WSSYNTAX '/CONSULTA_SC5/update_xsepcd?{filial, num}'                                                                             PATH 'update_xsepcd'  PRODUCES APPLICATION_JSON
-    WSMETHOD PUT MUDA_XLIBCOM DESCRIPTION 'Faz update no campo C5_XLIBCOM'       WSSYNTAX '/CONSULTA_SC5/update_xlibcom?{filial, num}'                                                                            PATH 'update_xlibcom' PRODUCES APPLICATION_JSON
-    WSMETHOD PUT ALTERA_CAMPO DESCRIPTION 'Faz update no campo selecionado'      WSSYNTAX '/CONSULTA_SC5/update_campo?{filial, num, campo, booleano, hora, logado, campo_hora, campo_logado}'                     PATH 'update_campo'   PRODUCES APPLICATION_JSON
+    WSMETHOD GET ID            DESCRIPTION 'Retorna o registro pesquisado'                   WSSYNTAX '/CONSULTA_SC5/get_id?{id}'                                                                                                PATH 'get_id'         PRODUCES APPLICATION_JSON
+    WSMETHOD GET ALL           DESCRIPTION 'Retorna todos os registros'                      WSSYNTAX '/CONSULTA_SC5/get_all?{updated_at, limit, page}'                                                                          PATH 'get_all'        PRODUCES APPLICATION_JSON
+    WSMETHOD GET TRACK_ORDER   DESCRIPTION 'Retorna registros para o Track Order'            WSSYNTAX '/CONSULTA_SC5/get_track?{updated_at, limit, page, pedido, data_ent, filial, vendedor, pcampo, scampo, pvalor, svalor}'    PATH 'get_track'      PRODUCES APPLICATION_JSON
+    WSMETHOD GET FILTRO        DESCRIPTION 'Retorna registros com filtro para o Track Order' WSSYNTAX '/CONSULTA_SC5/filtro_trck?{updated_at, limit, page, pedido, data_ent, filial, vendedor, pcampo, scampo, pvalor, svalor}'  PATH 'filtro_trck'    PRODUCES APPLICATION_JSON
+    WSMETHOD PUT UPDATE        DESCRIPTION 'Atualização de registro'                         WSSYNTAX '/CONSULTA_SC5/update'                                                                                                     PATH 'update'         PRODUCES APPLICATION_JSON
+    WSMETHOD PUT MUDA_SEPCD    DESCRIPTION 'Faz update no campo C5_XSEPCD'                   WSSYNTAX '/CONSULTA_SC5/update_xsepcd?{filial, num}'                                                                                PATH 'update_xsepcd'  PRODUCES APPLICATION_JSON
+    WSMETHOD PUT MUDA_XLIBCOM  DESCRIPTION 'Faz update no campo C5_XLIBCOM'                  WSSYNTAX '/CONSULTA_SC5/update_xlibcom?{filial, num}'                                                                               PATH 'update_xlibcom' PRODUCES APPLICATION_JSON
+    WSMETHOD PUT ALTERA_CAMPO  DESCRIPTION 'Faz update no campo selecionado'                 WSSYNTAX '/CONSULTA_SC5/update_campo?{filial, num, campo, booleano, hora, logado, campo_hora, campo_logado}'                        PATH 'update_campo'   PRODUCES APPLICATION_JSON
 
 END WSRESTFUL
 
@@ -207,7 +208,162 @@ WSMETHOD GET ALL WSRECEIVE updated_at, limit, page WSSERVICE CONSULTA_SC5
     Self:SetResponse(jResponse:toJSON())
 Return lRet
 
-WSMETHOD GET TRACK_ORDER WSRECEIVE updated_at, limit, page, pedido, data_ent, filial, vendedor, pcampo, scampo, pvalor, svalor WSSERVICE CONSULTA_SC5
+WSMETHOD GET TRACK_ORDER WSRECEIVE updated_at, limit, page, pedido, data_ent, filial,vendedor WSSERVICE CONSULTA_SC5
+    Local lRet       := .T.
+    Local jResponse  := JsonObject():New()
+    Local cQueryTab  := ''
+    Local nTamanho   := 10000
+    Local nTotal     := 0
+    Local nPags      := 0
+    Local nPagina    := 0
+    Local nAtual     := 0
+    Local data       := ''
+    Local nPedido    := ''
+    Local nData_ent  := ''
+    Local nFilial    := ''
+    Local oRegistro
+    Local cAliasWS   := 'SC5'
+    Local nvendedor   := ''
+
+    If ! Empty(::updated_at)
+        data := ::updated_at
+    EndIf
+
+    If ! Empty(::pedido)
+        nPedido := ::pedido
+    EndIf
+
+    If ! Empty(::data_ent)
+        nData_ent := ::data_ent
+    EndIf
+
+    If ! Empty(::filial)
+        nFilial := ::filial
+    EndIf
+
+    If ! Empty(::vendedor)
+        nvendedor := ::vendedor
+    EndIf
+
+    //Efetua a busca dos registros
+    cQueryTab := " SELECT TAB.C5_XPEDTR, TAB.C5_FILIAL,TAB.C5_CLIENTE , TAB.C5_NUM, TAB.C5_XSEPCD, TAB.C5_XLIBCOM, TAB.C5_XLIBFAT, TAB.C5_XFATURD, TAB.C5_XLIBEXP, TAB.C5_XEXPEDI," + CRLF
+    cQueryTab += " TAB.C5_XNSEPCD, TAB.C5_XHSEPCD, TAB.C5_XHLIBCO, TAB.C5_XNLIBCO, TAB.C5_XHLIBFA, TAB.C5_XNLIBFA, TAB.C5_XHFATUR, TAB.C5_XNFATUR, TAB.C5_FECENT," + CRLF
+    cQueryTab += " TAB.C5_XHLIBEX, TAB.C5_XNLIBEX, TAB.C5_XHEXPED, TAB.C5_XNEXPED, TAB.C5_VEND1, TAB.C5_LOJACLI," + CRLF
+    cQueryTab += "     TAB.R_E_C_N_O_ AS TABREC, TAB.R_E_C_D_E_L_ AS RECDEL, TAB.S_T_A_M_P_ AS STAMP" + CRLF
+    cQueryTab += " FROM " + CRLF
+    cQueryTab += "     " + RetSQLName(cAliasWS) + " TAB " + CRLF
+    If ! Empty(data)
+        cQueryTab += " WHERE S_T_A_M_P_ >= CONVERT(date,'" + data + "',103) AND TAB.C5_NUM like '%"+nPedido+"%' AND TAB.C5_FECENT like '%"+nData_ent+"%' AND TAB.C5_FILIAL like '%"+nFilial+"%' " + CRLF
+    EndIf
+    If Empty(data)
+        cQueryTab += " WHERE TAB.C5_NUM like '%"+nPedido+"%' AND TAB.C5_FECENT like '%"+nData_ent+"%' AND TAB.C5_FILIAL like '%"+nFilial+"%' AND TAB.C5_VEND1 like '%"+nvendedor+"%' " + CRLF
+    EndIf
+
+
+    cQueryTab += " ORDER BY " + CRLF
+    cQueryTab += "     TABREC DESC" + CRLF
+    TCQuery cQueryTab New Alias 'QRY_TAB'
+
+    //Se não encontrar registros
+    If QRY_TAB->(EoF())
+        //SetRestFault(500, 'Falha ao consultar registros') //caso queira usar esse comando, você não poderá usar outros retornos, como os abaixo
+        Self:setStatus(404) 
+        jResponse['errorId']  := 'ALL003'
+        jResponse['error']    := 'Registro(s) não encontrado(s)'
+        jResponse['solution'] := 'A consulta de registros não retornou nenhuma informação'
+    Else
+        jResponse['objects'] := {}
+
+        //Conta o total de registros
+        Count To nTotal
+        QRY_TAB->(DbGoTop())
+
+        //O tamanho do retorno, será o limit, se ele estiver definido
+        If ! Empty(::limit)
+            nTamanho := ::limit
+        EndIf
+
+        //Pegando total de páginas
+        nPags := NoRound(nTotal / nTamanho, 0)
+        nPags += Iif(nTotal % nTamanho != 0, 1, 0)
+        
+        //Se vier página
+        If ! Empty(::page)
+            nPagina := ::page
+        EndIf
+
+        //Se a página vier zerada ou negativa ou for maior que o máximo, será 1 
+        If nPagina <= 0 .Or. nPagina > nPags
+            nPagina := 1
+        EndIf
+
+        //Se a página for diferente de 1, pula os registros
+        If nPagina != 1
+            QRY_TAB->(DbSkip((nPagina-1) * nTamanho))
+        EndIf
+
+        //Adiciona os dados para a meta
+        jJsonMeta := JsonObject():New()
+        jJsonMeta['total']         := nTotal
+        jJsonMeta['current_page']  := nPagina
+        jJsonMeta['total_page']    := nPags
+        jJsonMeta['total_items']   := nTamanho
+        jResponse['meta'] := jJsonMeta
+
+        //Percorre os registros
+        While ! QRY_TAB->(EoF())
+            nAtual++
+            
+            //Se ultrapassar o limite, encerra o laço
+            If nAtual > nTamanho
+                Exit
+            EndIf
+            //Posiciona o registro e adiciona no retorno
+            DbSelectArea(cAliasWS)
+            (cAliasWS)->(DbGoTo(QRY_TAB->TABREC))
+            
+            oRegistro := JsonObject():New()
+            oRegistro['C5_FILIAL']  := (cAliasWS)->C5_FILIAL
+            oRegistro['C5_NUM']     := (cAliasWS)->C5_NUM 
+            oRegistro['C5_CLIENTE'] := (cAliasWS)->C5_CLIENTE             
+            oRegistro['C5_XSEPCD']  := (cAliasWS)->C5_XSEPCD
+            oRegistro['C5_XNSEPCD'] := (cAliasWS)->C5_XNSEPCD
+            oRegistro['C5_XHSEPCD'] := (cAliasWS)->C5_XHSEPCD
+            oRegistro['C5_XLIBCOM'] := (cAliasWS)->C5_XLIBCOM
+            oRegistro['C5_XHLIBCO'] := (cAliasWS)->C5_XHLIBCO
+            oRegistro['C5_XNLIBCO'] := (cAliasWS)->C5_XNLIBCO
+            oRegistro['C5_XLIBFAT'] := (cAliasWS)->C5_XLIBFAT
+            oRegistro['C5_XHLIBFA'] := (cAliasWS)->C5_XHLIBFA
+            oRegistro['C5_XNLIBFA'] := (cAliasWS)->C5_XNLIBFA
+            oRegistro['C5_XFATURD'] := (cAliasWS)->C5_XFATURD
+            oRegistro['C5_XHFATUR'] := (cAliasWS)->C5_XHFATUR
+            oRegistro['C5_XNFATUR'] := (cAliasWS)->C5_XNFATUR
+            oRegistro['C5_XLIBEXP'] := (cAliasWS)->C5_XLIBEXP
+            oRegistro['C5_XHLIBEX'] := (cAliasWS)->C5_XHLIBEX
+            oRegistro['C5_XNLIBEX'] := (cAliasWS)->C5_XNLIBEX
+            oRegistro['C5_XEXPEDI'] := (cAliasWS)->C5_XEXPEDI
+            oRegistro['C5_XHEXPED'] := (cAliasWS)->C5_XHEXPED
+            oRegistro['C5_XNEXPED'] := (cAliasWS)->C5_XNEXPED
+            oRegistro['C5_XPEDTR']  := (cAliasWS)->C5_XPEDTR            
+            oRegistro['C5_FECENT']  := (cAliasWS)->C5_FECENT
+            oRegistro['C5_VEND1']   := (cAliasWS)->C5_VEND1
+            oRegistro['C5_LOJACLI'] := (cAliasWS)->C5_LOJACLI
+            oRegistro['S_T_A_M_P_'] := QRY_TAB->STAMP
+            oRegistro['R_E_C_N_O_'] := QRY_TAB->TABREC
+            oRegistro['R_E_C_D_E_L_'] := QRY_TAB->RECDEL
+            aAdd(jResponse['objects'], oRegistro)
+
+            QRY_TAB->(DbSkip())
+        EndDo
+    EndIf
+    QRY_TAB->(DbCloseArea())
+
+    //Define o retorno
+    Self:SetContentType('application/json')
+    Self:SetResponse(jResponse:toJSON())
+Return lRet
+
+WSMETHOD GET FILTRO WSRECEIVE updated_at, limit, page, pedido, data_ent, filial, vendedor, pcampo, scampo, pvalor, svalor WSSERVICE CONSULTA_SC5
     Local lRet       := .T.
     Local jResponse  := JsonObject():New()
     Local cQueryTab  := ''

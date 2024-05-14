@@ -28,6 +28,7 @@ WSRESTFUL CONSULTA_SCJ DESCRIPTION 'Retorna proposta comercial'
     WSMETHOD GET    INTEGRADOR    DESCRIPTION 'Retorna registros para o integrador' WSSYNTAX '/CONSULTA_SCJ/integrador?{updated_at, limit, page, filial, numero, dt_emissao, cliente}' PATH 'integrador' PRODUCES APPLICATION_JSON
     WSMETHOD PUT    UPDATE_CST    DESCRIPTION 'Faz update proposta na coluna cst'   WSSYNTAX '/CONSULTA_SCJ/update_cst?{num, fts,valor, transp}'                                       PATH 'update_cst' PRODUCES APPLICATION_JSON
     WSMETHOD GET    UNICO         DESCRIPTION 'Retorn um unico orcamento'           WSSYNTAX '/CONSULTA_SCJ/unico?{filial, numero, cliente, loja}'                                     PATH 'unico'      PRODUCES APPLICATION_JSON
+    WSMETHOD PUT    VIRA_FOB      DESCRIPTION 'Zera o frete e vira FOB'             WSSYNTAX '/CONSULTA_SCJ/vira_fob?{numero, filial}'                                                 PATH 'vira_fob'   PRODUCES APPLICATION_JSON
 
 END WSRESTFUL
 
@@ -555,4 +556,43 @@ WSMETHOD GET UNICO WSRECEIVE filial, numero, cliente, loja WSSERVICE CONSULTA_SC
     //Define o retorno
     Self:SetContentType('application/json')
     Self:SetResponse(jResponse:toJSON())
+Return lRet
+
+WSMETHOD PUT VIRA_FOB WSRECEIVE numero, filial WSSERVICE CONSULTA_SCJ
+    Local lRet          := .T.
+    Local cNumero       := ''
+    Local cFilial       := ''   
+
+    Begin Transaction
+    If ! Empty(::numero)
+        cNumero := ::numero
+    EndIf
+    
+    If ! Empty(::filial)
+        cFilial := ::filial
+    EndIf
+    
+      //Monta o Update
+      cQryUpd := " UPDATE " + RetSqlName("SCJ") + " "
+      cQryUpd += "     SET CJ_CST_FTS = '0' "    
+      cQryUpd += "    , CJ_XFRESIM = 0 " 
+      cQryUpd += "    , CJ_XFREIMP = 0 "       
+      cQryUpd += "    , CJ_TPFRETE = 'C' "          
+      cQryUpd += "    , CJ_FRETE   = 0 "             
+      cQryUpd += " WHERE "
+      cQryUpd += "      CJ_FILIAL = '"+cFilial+"' AND CJ_NUM = '"+cNumero+"' "
+
+       Self:SetResponse("OK!")
+
+    //Tenta executar o update
+       nErro := TcSqlExec(cQryUpd)
+
+     //Se houve erro, mostra a mensagem e cancela a transação
+      If nErro != 0
+        Self:SetResponse("ERRO! "+nErro)
+        MsgStop("Erro na execução da query: "+TcSqlError(), "Atenção")
+        DisarmTransaction()
+      EndIf
+    End Transaction
+
 Return lRet
