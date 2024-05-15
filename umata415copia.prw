@@ -7,14 +7,14 @@ User Function M415COPIA()
     Local aArea    := GetArea() //Salvando a área atual
  
  
-    DBSelectArea("FA2")
-    FA2->(DBSetOrder(1))
+    DBSelectArea("FA1")
+    FA1->(DBSetOrder(1))
  
-    FA2->(DBSeek(xFilial("FA2")+"000001"))
+    FA1->(DBSeek(xFilial("FA1")+"000001"))
 
-    If(FA2->FA2_STATUS == .T.)
+    If(FA1->FA1_STATUS == .T.)
         If SCJ->CJ_TPFRETE == 'C'
-            Alert('Frete nao pode ser CIF na copia do orcamento.')
+            Alert('Frete nao pode ser CIF na copia do orcamento. (000001)')
             lRet := .F.
         Else
             lRet := .T.

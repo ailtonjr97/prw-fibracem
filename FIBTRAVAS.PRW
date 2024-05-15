@@ -3,7 +3,7 @@
 
 User Function FIBTRAVAS()
     Local aArea    := GetArea()
-    Local aAreaFA2  := FA2->(GetArea())
+    Local aAreaFA1  := FA1->(GetArea())
     Local cDelOk   := ".T."
     Local cFunTOk  := ".T."
  
@@ -14,12 +14,11 @@ User Function FIBTRAVAS()
                 msgInfo("Acesso exclusivo para administradores")
                 Return 0
             EndIf
-
         EndIf
     Else
-        AxCadastro('FA2', 'Travas', cDelOk, cFunTOk)
+        AxCadastro('FA1', 'Travas', cDelOk, cFunTOk)
     EndIf
  
-    RestArea(aAreaFA2)
+    RestArea(aAreaFA1)
     RestArea(aArea)
 Return
