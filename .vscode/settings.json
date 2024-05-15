@@ -1,5 +1,5 @@
 {
     "totvsLanguageServer.welcomePage": false,
-    "totvsLanguageServer.editor.linter.includes": "C:\\totvs\\includes",
+    "totvsLanguageServer.editor.linter.includes": "C:\\Program Files (x86)\\smartclientdev\\includes",
     "totvsLanguageServer.workspaceServerConfig": false
 }

@@ -11,11 +11,15 @@ FA1->(DBSetOrder(1))
 FA1->(DBSeek(xFilial("FA1")+"000002"))
 
 If(FA1->FA1_STATUS == .T.)
-    If(RetCodUsr() != '000009')
-        If(RetCodUsr() != '000142')
-            If(RetCodUsr() != '000030')
-                Alert("Usuário sem autorização para alterar produto. (000002)")
-                lExecuta := .F.
+    If(RetCodUsr() != '000009') //Elaine Ribeiro
+        If(RetCodUsr() != '000142') //Amanda Garcia
+            If(RetCodUsr() != '000030') //Eduardo Souza
+                If(RetCodUsr() != '000007') //Fernando Gonçalves
+                    If(RetCodUsr() != '000288') //Luany Santos
+                        Alert("Usuário sem autorização para alterar produto. (000002)")
+                        lExecuta := .F.
+                    Endif
+                Endif
             Endif
         Endif
     Endif
