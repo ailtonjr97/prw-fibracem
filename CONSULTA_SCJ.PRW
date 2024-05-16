@@ -4,7 +4,6 @@
 #Include "TopConn.ch"
 
 
-
 WSRESTFUL CONSULTA_SCJ DESCRIPTION 'Retorna proposta comercial'
     //Atributos
     WSDATA id         AS STRING
@@ -30,6 +29,10 @@ WSRESTFUL CONSULTA_SCJ DESCRIPTION 'Retorna proposta comercial'
     WSMETHOD GET    UNICO         DESCRIPTION 'Retorn um unico orcamento'           WSSYNTAX '/CONSULTA_SCJ/unico?{filial, numero, cliente, loja}'                                     PATH 'unico'      PRODUCES APPLICATION_JSON
     WSMETHOD PUT    VIRA_FOB      DESCRIPTION 'Zera o frete e vira FOB'             WSSYNTAX '/CONSULTA_SCJ/vira_fob?{numero, filial}'                                                 PATH 'vira_fob'   PRODUCES APPLICATION_JSON
     WSMETHOD PUT    VIRA_CIF      DESCRIPTION 'Zera o frete e vira CIF'             WSSYNTAX '/CONSULTA_SCJ/vira_cif?{numero, filial}'                                                 PATH 'vira_cif'   PRODUCES APPLICATION_JSON
+    WSMETHOD GET    ALL_CREDITO        DESCRIPTION 'Retorna todos os registros com status para credito'          WSSYNTAX '/CONSULTA_SCJ/get_credito?{updated_at, limit, page}'      PATH 'get_credito'    PRODUCES APPLICATION_JSON
+    WSMETHOD GET    CRED_PLUS      DESCRIPTION 'Retorna todos os registros com status para credito'          WSSYNTAX '/CONSULTA_SCJ/cred_info?{updated_at, limit, page}'      PATH 'cred_info'    PRODUCES APPLICATION_JSON
+
+
 
 END WSRESTFUL
 
@@ -637,4 +640,185 @@ WSMETHOD PUT VIRA_CIF WSRECEIVE numero, filial WSSERVICE CONSULTA_SCJ
       EndIf
     End Transaction
 
+Return lRet
+
+WSMETHOD GET ALL_CREDITO WSRECEIVE updated_at, limit, page WSSERVICE CONSULTA_SCJ
+    Local lRet       := .T.
+    Local jResponse  := JsonObject():New()
+    Local cQueryTab  := ''
+    Local nTamanho   := 10
+    Local nTotal     := 0
+    Local nPags      := 0
+    Local nPagina    := 0
+    Local nAtual     := 0
+    Local oRegistro
+    Local cAliasWS   := 'SCJ'
+
+    // Efetua a busca dos registros
+    cQueryTab := " SELECT " + CRLF
+    cQueryTab += "     TAB.R_E_C_N_O_ AS TABREC " + CRLF
+    cQueryTab += " FROM " + CRLF
+    cQueryTab += "     " + RetSQLName(cAliasWS) + " TAB " + CRLF
+    cQueryTab += " WHERE TAB.CJ_XSTACRE <> '' and TAB.CJ_XSTACRE <> 'L' and TAB.CJ_XSTACRE <> 'X' " + CRLF    
+    cQueryTab += " ORDER BY " + CRLF
+    cQueryTab += "     TABREC " + CRLF
+    TCQuery cQueryTab New Alias 'QRY_TAB'
+
+    DbSelectArea('QRY_TAB')
+
+    // Se não encontrar registros
+    If QRY_TAB->(EoF())
+        // SetRestFault(500, 'Falha ao consultar registros') // caso queira usar esse comando, você não poderá usar outros retornos, como os abaixo
+        Self:setStatus(500)
+        jResponse['errorId']  := 'ALL003'
+        jResponse['error']    := 'Registro(s) não encontrado(s)'
+        jResponse['solution'] := 'A consulta de registros não retornou nenhuma informação'
+    Else
+        jResponse['objects'] := {}
+
+        // Conta o total de registros
+        Count To nTotal
+        QRY_TAB->(DbGoTop())
+
+
+
+
+        // Percorre os registros
+        While ! QRY_TAB->(EoF())
+            nAtual++
+            
+
+
+            // Posiciona o registro e adiciona no retorno
+            DbSelectArea(cAliasWS)
+            (cAliasWS)->(DbGoTo(QRY_TAB->TABREC))
+            
+            oRegistro := JsonObject():New()
+            oRegistro['CJ_FILIAL']   := (cAliasWS)->CJ_FILIAL
+            oRegistro['CJ_NUM']      := (cAliasWS)->CJ_NUM
+            oRegistro['CJ_EMISSAO']  := (cAliasWS)->CJ_EMISSAO
+            oRegistro['CJ_CLIENTE']  := (cAliasWS)->CJ_CLIENTE
+            oRegistro['CJ_LOJA']     := (cAliasWS)->CJ_LOJA
+            oRegistro['CJ_CLIENT']   := (cAliasWS)->CJ_CLIENT
+            oRegistro['CJ_LOJAENT']  := (cAliasWS)->CJ_LOJAENT
+            oRegistro['CJ_CONDPAG']  := (cAliasWS)->CJ_CONDPAG
+            oRegistro['CJ_TABELA']   := (cAliasWS)->CJ_TABELA
+            oRegistro['CJ_STATUS']   := (cAliasWS)->CJ_STATUS
+            oRegistro['CJ_FRETE']    := (cAliasWS)->CJ_FRETE
+            oRegistro['CJ_VALIDA']   := (cAliasWS)->CJ_VALIDA
+            oRegistro['CJ_XTRANSP']  := (cAliasWS)->CJ_XTRANSP
+            oRegistro['CJ_TPFRETE']  := (cAliasWS)->CJ_TPFRETE
+            oRegistro['CJ_TIPOCLI']  := (cAliasWS)->CJ_TIPOCLI
+            oRegistro['CJ_XENTREG']  := (cAliasWS)->CJ_XENTREG
+            oRegistro['CJ_XVEND1']   := (cAliasWS)->CJ_XVEND1
+            oRegistro['CJ_XESTADO']  := (cAliasWS)->CJ_XESTADO
+            oRegistro['CJ_XPVKORP']  := (cAliasWS)->CJ_XPVKORP
+            oRegistro['CJ_XFREIMP']  := (cAliasWS)->CJ_XFREIMP
+            oRegistro['CJ_CST_FTS']  := (cAliasWS)->CJ_CST_FTS
+            oRegistro['CJ_XNOMUSS']  := (cAliasWS)->CJ_XNOMUSS
+            oRegistro['CJ_XDTSOLI']  := (cAliasWS)->CJ_XDTSOLI
+            oRegistro['CJ_XHRSOLI']  := (cAliasWS)->CJ_XHRSOLI
+            oRegistro['CJ_XNOMUSP']  := (cAliasWS)->CJ_XNOMUSP
+            oRegistro['CJ_XDTSOLP']  := (cAliasWS)->CJ_XDTSOLP
+            oRegistro['CJ_XHRSOLP']  := (cAliasWS)->CJ_XHRSOLP
+
+            aAdd(jResponse['objects'], oRegistro)
+
+            QRY_TAB->(DbSkip())
+        End
+    EndIf
+    QRY_TAB->(DbCloseArea())
+
+    Self:SetContentType('application/json')
+    Self:SetResponse(jResponse:toJSON())
+Return lRet
+
+
+WSMETHOD GET CRED_PLUS WSRECEIVE updated_at, limit, page WSSERVICE CONSULTA_SCJ
+    Local lRet       := .T.
+    Local jResponse  := JsonObject():New()
+    Local cQueryTab  := ''
+    Local nTamanho   := 10
+    Local nTotal     := 0
+    Local nPags      := 0
+    Local nPagina    := 0
+    Local nAtual     := 0
+    Local oRegistro
+    Local cAliasWS   := 'SCJ'
+
+    // Efetua a busca dos registros
+    cQueryTab := "SELECT SCJ010.R_E_C_N_O_ AS TABREC, CJ_FILIAL, CJ_NUM, CJ_EMISSAO, CJ_CLIENTE, CJ_LOJA, CJ_CLIENT, CJ_LOJAENT, CJ_CONDPAG, CJ_TABELA, CJ_STATUS, CJ_FRETE, CJ_VALIDA, CJ_XTRANSP, CJ_TPFRETE, CJ_TIPOCLI, CJ_XENTREG, CJ_XVEND1, CJ_XESTADO, CJ_XPVKORP, CJ_XFREIMP, CJ_CST_FTS, CJ_XNOMUSS, CJ_XDTSOLI, CJ_XHRSOLI, CJ_XNOMUSP, CJ_XDTSOLP, CJ_XHRSOLP, A1_NOME, SUM(CASE WHEN BZ_IPI <> 0.0 THEN ((CK_VALOR * BZ_IPI) / 100) + CK_VALOR + CJ_XFREIMP ELSE CK_VALOR + CJ_XFREIMP END) AS VALOR_VENDA FROM SCJ010 INNER JOIN SCK010 ON SCJ010.CJ_FILIAL = SCK010.CK_FILIAL AND SCJ010.CJ_CLIENTE = SCK010.CK_CLIENTE AND SCJ010.CJ_LOJA = SCK010.CK_LOJA AND SCJ010.CJ_NUM = SCK010.CK_NUM INNER JOIN SBZ010 ON SBZ010.BZ_FILIAL = SCK010.CK_FILIAL AND SBZ010.BZ_COD = SCK010.CK_PRODUTO INNER JOIN SA1010 ON SA1010.A1_COD = SCJ010.CJ_CLIENTE AND SA1010.A1_LOJA = SCJ010.CJ_LOJA WHERE CJ_XSTACRE <> '' AND CJ_XSTACRE <> 'L' AND CJ_XSTACRE <> 'X' GROUP BY SCJ010.R_E_C_N_O_, CJ_FILIAL, CJ_NUM, CJ_EMISSAO, CJ_CLIENTE, CJ_LOJA, CJ_CLIENT, CJ_LOJAENT, CJ_CONDPAG, CJ_TABELA, CJ_STATUS, CJ_FRETE, CJ_VALIDA, CJ_XTRANSP, CJ_TPFRETE, CJ_TIPOCLI, CJ_XENTREG, CJ_XVEND1, CJ_XESTADO, CJ_XPVKORP, CJ_XFREIMP, CJ_CST_FTS, CJ_XNOMUSS, CJ_XDTSOLI, CJ_XHRSOLI, CJ_XNOMUSP, CJ_XDTSOLP, CJ_XHRSOLP, A1_NOME;
+" + CRLF
+
+    TCQuery cQueryTab New Alias 'QRY_TAB'
+
+    DbSelectArea('QRY_TAB')
+
+    // Se não encontrar registros
+    If QRY_TAB->(EoF())
+        // SetRestFault(500, 'Falha ao consultar registros') // caso queira usar esse comando, você não poderá usar outros retornos, como os abaixo
+        Self:setStatus(500)
+        jResponse['errorId']  := 'ALL003'
+        jResponse['error']    := 'Registro(s) não encontrado(s)'
+        jResponse['solution'] := 'A consulta de registros não retornou nenhuma informação'
+    Else
+        jResponse['objects'] := {}
+
+        // Conta o total de registros
+        Count To nTotal
+        QRY_TAB->(DbGoTop())
+
+
+
+
+        // Percorre os registros
+        While ! QRY_TAB->(EoF())
+            nAtual++
+            
+
+
+            // Posiciona o registro e adiciona no retorno
+            DbSelectArea(cAliasWS)
+            (cAliasWS)->(DbGoTo(QRY_TAB->TABREC))
+            
+            oRegistro := JsonObject():New()
+            oRegistro['CJ_FILIAL']   :=  QRY_TAB->CJ_FILIAL
+            oRegistro['CJ_NUM']      :=  QRY_TAB->CJ_NUM
+            oRegistro['CJ_EMISSAO']  :=  QRY_TAB->CJ_EMISSAO
+            oRegistro['CJ_CLIENTE']  :=  QRY_TAB->CJ_CLIENTE
+            oRegistro['CJ_LOJA']     :=  QRY_TAB->CJ_LOJA
+            oRegistro['CJ_CLIENT']   :=  QRY_TAB->CJ_CLIENT
+            oRegistro['CJ_LOJAENT']  :=  QRY_TAB->CJ_LOJAENT
+            oRegistro['CJ_CONDPAG']  :=  QRY_TAB->CJ_CONDPAG
+            oRegistro['CJ_TABELA']   :=  QRY_TAB->CJ_TABELA
+            oRegistro['CJ_STATUS']   :=  QRY_TAB->CJ_STATUS
+            oRegistro['CJ_FRETE']    :=  QRY_TAB->CJ_FRETE
+            oRegistro['CJ_VALIDA']   :=  QRY_TAB->CJ_VALIDA
+            oRegistro['CJ_XTRANSP']  :=  QRY_TAB->CJ_XTRANSP
+            oRegistro['CJ_TPFRETE']  :=  QRY_TAB->CJ_TPFRETE
+            oRegistro['CJ_TIPOCLI']  :=  QRY_TAB->CJ_TIPOCLI
+            oRegistro['CJ_XENTREG']  :=  QRY_TAB->CJ_XENTREG
+            oRegistro['CJ_XVEND1']   :=  QRY_TAB->CJ_XVEND1
+            oRegistro['CJ_XESTADO']  :=  QRY_TAB->CJ_XESTADO
+            oRegistro['CJ_XPVKORP']  :=  QRY_TAB->CJ_XPVKORP
+            oRegistro['CJ_XFREIMP']  :=  QRY_TAB->CJ_XFREIMP
+            oRegistro['CJ_CST_FTS']  :=  QRY_TAB->CJ_CST_FTS
+            oRegistro['CJ_XNOMUSS']  :=  QRY_TAB->CJ_XNOMUSS
+            oRegistro['CJ_XDTSOLI']  :=  QRY_TAB->CJ_XDTSOLI
+            oRegistro['CJ_XHRSOLI']  :=  QRY_TAB->CJ_XHRSOLI
+            oRegistro['CJ_XNOMUSP']  :=  QRY_TAB->CJ_XNOMUSP
+            oRegistro['CJ_XDTSOLP']  :=  QRY_TAB->CJ_XDTSOLP
+            oRegistro['CJ_XHRSOLP']  :=  QRY_TAB->CJ_XHRSOLP
+            oRegistro['A1_NOME']  :=     QRY_TAB->A1_NOME
+            oRegistro['VALOR_VENDA']  := QRY_TAB->VALOR_VENDA            
+
+            aAdd(jResponse['objects'], oRegistro)
+
+            QRY_TAB->(DbSkip())
+        End
+    EndIf
+    QRY_TAB->(DbCloseArea())
+
+    Self:SetContentType('application/json')
+    Self:SetResponse(jResponse:toJSON())
 Return lRet
